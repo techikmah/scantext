@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ScanText — find, translate and export text from scans</title>
+  <meta name="description" content="Open a scanned PDF, a photo or an office file. ScanText reads the text on your device, then you can search it, copy it, translate it and save it as Word, CSV or JSON. No account, nothing uploaded." />
+  <meta name="theme-color" content="#4B2E83" />
+
+  <meta property="og:title" content="ScanText — find, translate and export text from scans" />
+  <meta property="og:description" content="Search, translate and export text from scanned PDFs, photos and office files. Reading happens on your device." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="./icons/icon128.png" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon48.png" />
+  <link rel="icon" type="image/png" sizes="128x128" href="./icons/icon128.png" />
+  <link rel="apple-touch-icon" href="./icons/icon128.png" />
+
+  <!-- Apply the saved theme before first paint so there's no light/dark flash. -->
+  <script>
+    try {
+      var t = localStorage.getItem("scantext-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <!-- icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 14.5l6-6 6 6"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+      <symbol id="i-translate" viewBox="0 0 24 24"><path d="M3.5 6h9M8 4v2M5 6c.7 3.2 2.8 5.6 5.5 7M11.5 6c-.8 3.4-3.2 6.2-7 8.5"/><path d="M13 20l4-9.5 4 9.5M14.4 17h5.2"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6.5A1.5 1.5 0 016.5 5H15"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.4-5.7M20 4v4.5h-4.5"/></symbol>
+      <symbol id="i-tray" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M9 4.5v15"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+      <symbol id="i-paste" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3.5h6V5M9 11h6M9 15h4"/></symbol>
+      <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9L12 4.5 16.5 9M5 20h14"/></symbol>
+      <symbol id="i-retry" viewBox="0 0 24 24"><path d="M4 12a8 8 0 018-8 8 8 0 015.7 2.4L20 9M20 4v5h-5M20 12a8 8 0 01-8 8 8 8 0 01-5.7-2.4L4 15M4 20v-5h5"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app" id="app" data-has-docs="false" data-tray="open" data-drawer="closed">
+    <header class="topbar">
+      <button id="trayToggle" class="icon-btn tray-toggle" aria-label="Show or hide documents" aria-controls="tray" hidden>
+        <svg class="i"><use href="#i-tray"/></svg>
+      </button>
+      <a class="brand" href="./" aria-label="ScanText home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" class="bm-bg"/>
+          <path d="M9 6h10l5 5v15H9z" class="bm-sheet"/>
+          <path d="M19 6v5h5" class="bm-fold"/>
+          <rect x="12" y="15" width="9" height="2.2" rx="1.1" class="bm-ink"/>
+          <rect x="12" y="19.5" width="6" height="2.2" rx="1.1" class="bm-ink"/>
+          <rect x="6" y="16.4" width="20" height="1.8" rx=".9" class="bm-beam"/>
+        </svg>
+        <span>ScanText</span>
+      </a>
+
+      <div class="search" id="searchBar" hidden>
+        <svg class="i search-glyph" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="searchInput" type="search" placeholder="Search every open document" aria-label="Search text in the open documents" autocomplete="off" spellcheck="false" />
+        <span id="matchLabel" class="match-label" aria-live="polite">0 of 0</span>
+        <button id="prevBtn" class="icon-btn flat" aria-label="Previous match" title="Previous match (Shift+Enter)"><svg class="i"><use href="#i-up"/></svg></button>
+        <button id="nextBtn" class="icon-btn flat" aria-label="Next match" title="Next match (Enter)"><svg class="i"><use href="#i-down"/></svg></button>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="translateBtn" class="btn" hidden aria-expanded="false" aria-controls="drawer">
+          <svg class="i"><use href="#i-translate"/></svg><span>Translate</span>
+        </button>
+        <div class="menu-wrap">
+          <button id="exportBtn" class="btn" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="exportMenu">
+            <svg class="i"><use href="#i-download"/></svg><span>Export</span>
+          </button>
+          <div id="exportMenu" class="menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-action="copy">Copy all text</button>
+            <button type="button" role="menuitem" data-action="txt">Text file (.txt)</button>
+            <button type="button" role="menuitem" data-action="docx">Word document (.docx)</button>
+            <button type="button" role="menuitem" data-action="csv">Spreadsheet (.csv)</button>
+            <button type="button" role="menuitem" data-action="json">Data with word positions (.json)</button>
+            <hr />
+            <div class="menu-group" id="translatedGroup">
+              <div class="menu-label" id="translatedLabel">Translation</div>
+              <button type="button" role="menuitem" data-action="copy-tr">Copy translation</button>
+              <button type="button" role="menuitem" data-action="txt-tr">Translated text (.txt)</button>
+              <button type="button" role="menuitem" data-action="docx-tr">Translated Word document (.docx)</button>
+            </div>
+          </div>
+        </div>
+        <button id="themeBtn" class="icon-btn" aria-label="Switch between light and dark" title="Light or dark">
+          <svg class="i theme-sun"><use href="#i-sun"/></svg><svg class="i theme-moon"><use href="#i-moon"/></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" aria-label="Settings" title="Settings"><svg class="i"><use href="#i-settings"/></svg></button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="tray" id="tray" aria-label="Open documents">
+        <div class="tray-head">
+          <h2>Documents</h2>
+          <button id="addBtn" class="btn small"><svg class="i"><use href="#i-plus"/></svg><span>Add</span></button>
+        </div>
+        <ul id="docList" class="doc-list"></ul>
+        <p class="tray-foot">Drop files anywhere to add them. Everything stays in this browser.</p>
+      </aside>
+
+      <main class="bench" id="bench">
+        <div id="statusLine" class="status-line" role="status" aria-live="polite" hidden></div>
+
+        <section id="welcome" class="welcome">
+          <div class="welcome-copy">
+            <h1>Find any word in a scan.</h1>
+            <p class="lede">Open a PDF, a photo or an office file. ScanText reads the text on this device, so you can search it, copy it, translate it and save it.</p>
+            <div class="welcome-actions">
+              <button id="pickBtn" class="btn primary big"><svg class="i"><use href="#i-upload"/></svg><span>Open files</span></button>
+              <button id="cameraBtn" class="btn big" hidden><svg class="i"><use href="#i-camera"/></svg><span>Take a photo</span></button>
+              <button id="sampleBtn" class="btn big ghost">Try a sample</button>
+            </div>
+            <p class="fine">Or drop files anywhere, or paste an image with <kbd>Ctrl</kbd> <kbd>V</kbd>.</p>
+            <p class="fine formats">Reads PDF, JPG, PNG, WebP, TIFF, Word, PowerPoint, Excel, OpenDocument, CSV, text, HTML and RTF.</p>
+            <p class="fine privacy">Files never leave your browser. The network is used for language data the first time you read in a language, and for online translation, which asks you first.</p>
+          </div>
+
+          <div class="specimen" aria-hidden="true">
+            <div class="specimen-sheet">
+              <div class="spec-line l1">Ward committee, register of attendance</div>
+              <div class="spec-line l2">Present at the hall on the fourteenth</div>
+              <div class="spec-line l3"><span class="spec-hit">Meena Rao</span>, clerk, signed for the budget</div>
+              <div class="spec-line l4">Water supply and road repairs deferred</div>
+              <div class="spec-line l5">Next sitting after the annual accounts</div>
+              <div class="spec-line l6">Copies to every member of the ward</div>
+              <div class="spec-beam"></div>
+            </div>
+          </div>
+        </section>
+
+        <div id="pages" class="pages"></div>
+
+        <div id="viewbar" class="viewbar" hidden>
+          <button id="zoomOut" class="icon-btn flat" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button>
+          <button id="zoomFit" class="zoom-readout" aria-label="Reset zoom">100%</button>
+          <button id="zoomIn" class="icon-btn flat" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button>
+          <span class="viewbar-sep" aria-hidden="true"></span>
+          <span id="pageIndicator" class="page-indicator">Page 1 of 1</span>
+        </div>
+      </main>
+
+      <aside class="drawer" id="drawer" aria-label="Translate" inert>
+        <div class="drawer-inner">
+          <div class="drawer-head">
+            <h2>Translate</h2>
+            <button id="drawerClose" class="icon-btn flat" aria-label="Close translation panel"><svg class="i"><use href="#i-close"/></svg></button>
+          </div>
+
+          <div class="tr-controls">
+            <label class="field">
+              <span>From</span>
+              <select id="srcLang"></select>
+            </label>
+            <label class="field">
+              <span>To</span>
+              <select id="tgtLang"><option value="" disabled>Choose a language</option></select>
+            </label>
+          </div>
+          <p id="engineNote" class="engine-note"></p>
+
+          <div class="tr-actions">
+            <button id="translateDocBtn" class="btn primary">Translate document</button>
+            <button id="stopBtn" class="btn" hidden><svg class="i"><use href="#i-stop"/></svg><span>Stop</span></button>
+          </div>
+          <div id="trProgress" class="progress" hidden><div class="progress-fill"></div></div>
+          <div id="trError" class="tr-error" role="alert" hidden></div>
+
+          <section id="selCard" class="sel-card" hidden>
+            <div class="sel-head"><h3>Selected text</h3><button id="selClose" class="icon-btn flat" aria-label="Dismiss"><svg class="i"><use href="#i-close"/></svg></button></div>
+            <blockquote id="selOriginal" class="sel-original"></blockquote>
+            <div id="selResult" class="sel-result" dir="auto"></div>
+            <div class="sel-actions"><button id="selCopy" class="btn small" hidden><svg class="i"><use href="#i-copy"/></svg><span>Copy translation</span></button></div>
+          </section>
+
+          <div id="trPages" class="tr-pages"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="dropVeil" class="drop-veil" hidden><div>Drop files to open them</div></div>
+
+  <!-- settings -->
+  <div id="settingsPanel" class="overlay" hidden>
+    <div class="sheet-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <button id="closeSettingsBtn" class="icon-btn flat sheet-close" aria-label="Close settings"><svg class="i"><use href="#i-close"/></svg></button>
+      <h2 id="settingsTitle">Settings</h2>
+
+      <section class="set-section">
+        <label for="langSearchInput">Languages in your documents</label>
+        <input id="langSearchInput" type="search" placeholder="Search 125 languages" autocomplete="off" />
+        <div id="langSelected" class="lang-selected"></div>
+        <div id="langOptions" class="lang-options" role="listbox" aria-multiselectable="true" aria-label="Reading languages"></div>
+        <p class="hint">Pick only what is actually in your files. Loading many languages at once makes reading slower and less accurate.</p>
+        <label class="check"><input id="enhanceToggle" type="checkbox" /> <span>Clean up photos before reading (recommended for phone pictures)</span></label>
+      </section>
+
+      <section class="set-section">
+        <h3>Translation</h3>
+        <label class="field" for="engineSelect"><span>Translator</span></label>
+        <select id="engineSelect">
+          <option value="auto">Automatic (on-device first)</option>
+          <option value="chrome">Chrome, on this device</option>
+          <option value="libre">My LibreTranslate server</option>
+          <option value="mymemory">MyMemory, online</option>
+        </select>
+        <p class="hint">Chrome's translator keeps your text on this computer. MyMemory and LibreTranslate send text to a server, and ScanText asks before the first time.</p>
+        <label class="field" for="mmEmail"><span>MyMemory email (optional, raises the free limit from 5,000 to 50,000 characters a day)</span></label>
+        <input id="mmEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+        <label class="field" for="libreUrl"><span>LibreTranslate address</span></label>
+        <input id="libreUrl" type="url" placeholder="https://translate.example.org" />
+        <label class="field" for="libreKey"><span>LibreTranslate API key (optional)</span></label>
+        <input id="libreKey" type="password" autocomplete="off" />
+        <p class="hint">Settings are saved in this browser only. The key is stored unencrypted, so use a key you can revoke.</p>
+        <button id="clearTrBtn" class="btn small" type="button">Clear saved translations</button>
+      </section>
+
+      <button id="applySettingsBtn" class="btn primary wide">Apply settings</button>
+    </div>
+  </div>
+
+  <!-- consent before text is sent to an online translator -->
+  <div id="consentPanel" class="overlay" hidden>
+    <div class="sheet-dialog narrow" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+      <h2 id="consentTitle">Send text to translate it?</h2>
+      <p id="consentBody"></p>
+      <div class="dialog-actions">
+        <button id="consentNo" class="btn" type="button">Cancel</button>
+        <button id="consentYes" class="btn primary" type="button">Send and translate</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="fileInput" type="file" multiple hidden />
+  <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
