@@ -9,7 +9,7 @@
 //
 // Everything runs in the browser. The only network traffic is OCR language data on
 // first use of a language, and translation if the user picks an online engine.
-import { Analytics } from "@vercel/analytics/vue"
+
 import * as pdfjsLib from "../lib/pdfjs/pdf.min.mjs";
 import { hashBuffer, docCacheKey, getCachedDoc, saveCachedDoc, getSetting, setSetting, translationCache, clearTranslationMemory } from "./cache.js";
 import { LANGUAGES, DEFAULT_LANGUAGES } from "./languages.js";
@@ -21,7 +21,8 @@ import {
 } from "./translate.js";
 import { buildCsv, buildJson, buildTxt, buildDocxBlob, safeFileStem } from "./exporters.js";
 import { isSameLine, pageTextFromWords, findWordMatches, findTextOccurrences, hasBrokenShaping } from "./text-utils.js";
-
+import { inject } from "@vercel/analytics"
+inject
 const LIB_BASE = new URL("../lib/", import.meta.url);
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs/pdf.worker.min.mjs", LIB_BASE).href;
 
