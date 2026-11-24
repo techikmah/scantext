@@ -21,8 +21,7 @@ import {
 } from "./translate.js";
 import { buildCsv, buildJson, buildTxt, buildDocxBlob, safeFileStem } from "./exporters.js";
 import { isSameLine, pageTextFromWords, findWordMatches, findTextOccurrences, hasBrokenShaping } from "./text-utils.js";
-import { inject } from "@vercel/analytics"
-inject
+
 const LIB_BASE = new URL("../lib/", import.meta.url);
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs/pdf.worker.min.mjs", LIB_BASE).href;
 
